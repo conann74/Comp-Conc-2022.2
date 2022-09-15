@@ -1,0 +1,143 @@
+#include<stdio.h>
+#include <pthread.h>
+
+
+
+
+#define NTHREADS 2
+#define VECTOR_SIZE 10000
+
+
+
+
+int vector[VECTOR_SIZE];
+
+typedef struct  {
+    int start;
+    int end;
+} Range;
+
+
+
+
+
+
+void * square (void * arg) {
+    Range range = *(Range *) arg;
+
+    
+    printf("%d - %d\n", range.start, range.end);
+    printf("thread start\n");
+    
+
+    for(int i = range.start; i<=range.end; i++){
+        vector[i] = vector[i]*vector[i];
+    }
+
+    printf("thread end\n");
+
+    pthread_exit(NULL);
+}
+
+
+
+
+
+
+
+
+
+
+int main(void) {
+
+
+    //preenche o vetor para testes
+    for(int i=0; i<=VECTOR_SIZE-1; i++){
+        vector[i]=i;
+    }
+
+
+    //faz um vetor copia para testar corretude
+    int vector_copy[VECTOR_SIZE];
+    for(int i=0; i<=VECTOR_SIZE-1; i++){
+        vector_copy[i] = vector[i];
+    }
+
+
+
+    //Identificadores
+    pthread_t tid[NTHREADS];
+    
+
+
+
+    //O range de cada thread dentro do vetor
+    Range ranges[NTHREADS];
+    int rangeSize = sizeof(vector)/(sizeof(int)*(NTHREADS));
+
+
+
+
+
+    //setando o range de cada thread dentro do vetor
+    for(int i =0; i<=NTHREADS-1; i++){
+        ranges[i].start = i*rangeSize;
+        ranges[i].end = ((i+1)*rangeSize)-1;
+
+        //evitando problemas com impares
+        if(i==NTHREADS-1){
+            ranges[i].end = VECTOR_SIZE;
+        }
+    }
+
+
+
+
+    //Criando as threads
+    for(int i =0; i<=NTHREADS-1; i++){
+
+        if (pthread_create(&tid[i], NULL, square, (void *)&ranges[i])){
+            printf("ERRO -- pthread_create\n");
+        }
+    }
+
+
+
+    //dando join nas threads
+    for(int i =0; i<=NTHREADS-1; i++){
+        
+        if (pthread_join(tid[i], NULL)){
+            printf("ERRO -- pthread_join\n");
+        }
+    }
+    //printf("passou do join\n");
+
+
+
+    /*
+    //printa o vetor para teste
+    for(int i=0; i<=VECTOR_SIZE-1; i++){
+        printf("%d ", vector[i]);
+    }
+    printf("\n");
+    */
+    
+
+    //calcula os quadrados de vector_copy
+    for(int i=0; i<=VECTOR_SIZE-1; i++){
+        vector_copy[i] = vector_copy[i]*vector_copy[i];
+    }
+
+
+    //teste de corretude
+    for(int i=0; i<=VECTOR_SIZE-1; i++){
+        if(vector_copy[i] != vector[i]){
+            printf("Valor Errado!\n");
+            printf("%d x %d\n", vector_copy[i], vector[i]);
+            return 1;
+        }
+    }
+    printf("Valor Correto!\n");
+
+    return 0;
+}
